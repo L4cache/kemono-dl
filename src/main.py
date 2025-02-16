@@ -976,36 +976,50 @@ class downloader:
             extract_dir = os.path.join(base_dir, file_name)
             file_ext = os.path.splitext(archive_path)[1].lower()
             
-            # 检查是否已经解压过
-            hash_file = os.path.join(base_dir, self.hash_filename)
-            if os.path.exists(hash_file):
-                with open(hash_file, 'r') as f:
-                    hash_data = json.load(f)
-                    if hash_value in hash_data:
-                        logger.info(f"文件 {os.path.basename(archive_path)} 已经解压过")
-                        return True
-            else:
-                hash_data = {}
-
+            # 检查是否有解压失败标记
+            fail_mark = os.path.join(base_dir, f"{file_name}.extract_failed")
+            if os.path.exists(fail_mark):
+                logger.info(f"跳过: {os.path.basename(archive_path)} | 之前多次解压失败已标记")
+                return False  # 不删除压缩文件，保留它
+            
             # 创建解压目标目录
             if not os.path.exists(extract_dir):
                 os.makedirs(extract_dir)
 
-            # 根据不同的压缩格式进行解压
-            if file_ext == '.zip':
-                with zipfile.ZipFile(archive_path, 'r') as zip_ref:
-                    zip_ref.extractall(extract_dir)
-            elif file_ext == '.7z':
-                with py7zr.SevenZipFile(archive_path, 'r') as sz_ref:
-                    sz_ref.extractall(extract_dir)
-            elif file_ext in ['.rar']:
-                with rarfile.RarFile(archive_path, 'r') as rar_ref:
-                    rar_ref.extractall(extract_dir)
-            else:
-                logger.warning(f"不支持的压缩格式: {file_ext}")
-                return False
+            # 尝试解压
+            try:
+                if file_ext == '.zip':
+                    with zipfile.ZipFile(archive_path, 'r') as zip_ref:
+                        zip_ref.extractall(extract_dir)
+                elif file_ext == '.7z':
+                    with py7zr.SevenZipFile(archive_path, 'r') as sz_ref:
+                        sz_ref.extractall(extract_dir)
+                elif file_ext in ['.rar']:
+                    with rarfile.RarFile(archive_path, 'r') as rar_ref:
+                        rar_ref.extractall(extract_dir)
+                else:
+                    logger.warning(f"不支持的压缩格式: {file_ext}")
+                    return False
 
-            # 保存hash信息
+            except (RuntimeError, rarfile.BadRarFile) as e:
+                if "encrypted" in str(e).lower() or "password" in str(e).lower():
+                    logger.info(f"跳过加密的压缩文件: {os.path.basename(archive_path)}")
+                    # 删除创建的空目录
+                    if os.path.exists(extract_dir) and not os.listdir(extract_dir):
+                        os.rmdir(extract_dir)
+                    return False
+                raise e
+            except Exception as e:
+                raise e
+
+            # 保存hash信息（用于防止重复下载）
+            hash_file = os.path.join(base_dir, self.hash_filename)
+            try:
+                with open(hash_file, 'r') as f:
+                    hash_data = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                hash_data = {}
+            
             hash_data[hash_value] = file_name
             with open(hash_file, 'w') as f:
                 json.dump(hash_data, f, indent=2)
@@ -1017,6 +1031,36 @@ class downloader:
 
         except Exception as e:
             logger.error(f"解压失败 {os.path.basename(archive_path)}: {str(e)}")
+            # 检查是否存在重试计数文件
+            retry_file = os.path.join(base_dir, f"{file_name}.retry_count")
+            retry_count = 0
+            if os.path.exists(retry_file):
+                with open(retry_file, 'r') as f:
+                    retry_count = int(f.read().strip())
+            
+            retry_count += 1
+            if retry_count >= 3:  # 超过3次失败
+                # 创建永久失败标记
+                with open(fail_mark, 'w') as f:
+                    f.write(f"Extract failed 3 times, last attempt at {datetime.datetime.now()}: {str(e)}")
+                # 删除重试计数文件
+                if os.path.exists(retry_file):
+                    os.remove(retry_file)
+                logger.error(f"文件 {os.path.basename(archive_path)} 已尝试3次解压均失败，已标记为永久跳过")
+                # 不删除压缩文件，保留它
+            else:
+                # 更新重试计数
+                with open(retry_file, 'w') as f:
+                    f.write(str(retry_count))
+                logger.warning(f"文件 {os.path.basename(archive_path)} 解压失败第{retry_count}次，将重试下载")
+                # 删除压缩文件（除非是密码保护的），触发重新下载
+                if "encrypted" not in str(e).lower() and "password" not in str(e).lower():
+                    if os.path.exists(archive_path):
+                        os.remove(archive_path)
+            
+            # 删除创建的空目录
+            if os.path.exists(extract_dir) and not os.listdir(extract_dir):
+                os.rmdir(extract_dir)
             return False
 
     def process_existing_archives(self, directory):
