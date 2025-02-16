@@ -11,6 +11,11 @@ import json
 from numbers import Number
 import pathlib
 import itertools
+import zipfile
+import py7zr
+import rarfile
+import shutil
+import hashlib
 
 from .args import get_args
 from .logger import logger
@@ -112,6 +117,8 @@ class downloader:
         self.proxy_agent = args['proxy_agent']
         self.force_dss = args['force_dss']
         self.archives_password = args['archives_password']
+        self.auto_extract = True  # 新增自动解压选项
+        self.hash_filename = '.extracted_hash'  # 用于存储解压后文件的hash
 
         self.session = RefererSession(
             proxy_agent = self.proxy_agent,
@@ -816,6 +823,10 @@ class downloader:
             else:
                 os.rename(part_file, file['file_path'])
 
+            # 在成功下载后添加解压逻辑
+            if self.auto_extract and file['file_variables']['ext'].lower() in ['zip', '7z', 'rar']:
+                self.extract_archive(file['file_path'], file['file_variables']['hash'])
+
     def download_yt_dlp(self, post:dict):
         # download from video streaming site
         # if self.yt_dlp and post['embed']:
@@ -882,7 +893,21 @@ class downloader:
         return False
 
     def skip_file(self, file:dict, post:dict):
-        # check if file exists
+        # 检查是否是已解压的文件
+        if file['file_variables']['ext'].lower() in ['zip', '7z', 'rar']:
+            extract_dir = os.path.dirname(file['file_path'])
+            hash_file = os.path.join(extract_dir, self.hash_filename)
+            if os.path.exists(hash_file):
+                try:
+                    with open(hash_file, 'r') as f:
+                        hash_data = json.load(f)
+                        if file['file_variables']['hash'] in hash_data:
+                            logger.info(f"跳过: {os.path.split(file['file_path'])[1]} | 文件已解压到 {hash_data[file['file_variables']['hash']]}")
+                            return True
+                except:
+                    pass
+
+        # 检查文件是否存在
         if not self.overwrite:
             if os.path.exists(file['file_path']):
                 confirm_msg = ''
@@ -890,29 +915,12 @@ class downloader:
                     local_hash = get_file_hash(file['file_path'])
                     if local_hash != file['file_variables']['hash']:
                         logger.warning(f"Corrupted file detected, remove this file and try to redownload | path: {file['file_path']} " + 
-                                        f"local hash: {local_hash} server hash: {file['file_variables']['hash']}")
+                                    f"local hash: {local_hash} server hash: {file['file_variables']['hash']}")
                         os.remove(file['file_path'])
                         return False
                     confirm_msg = ' | Hash confirmed'
                 logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | File already exists{confirm_msg}")
                 return True
-            if self.dupe_check:
-                if file["file_variables"].get("index") is not None:
-                    fp_cur=pathlib.Path(file['file_path'])
-                    fp_par=fp_cur.parent
-                    templates=self.dupe_check_template.split(',')
-                    pattern=templates[0].format(**file['file_variables'], **post['post_variables'])
-                    pattern2=templates[1].format(**file['file_variables'], **post['post_variables'])
-                    similar=fp_par.glob(pattern)
-                    similar2=fp_par.parent.glob(pattern2)
-                    for x in itertools.chain(similar,similar2):
-                        if 'hash' in file['file_variables'] and file['file_variables']['hash'] != None:
-                            sim_hash = get_file_hash(str(x))
-                            if sim_hash == file['file_variables']['hash']:
-                                if x.suffix == '.part':
-                                    os.rename(x,x.parent/x.stem)
-                                logger.info(f"Skipping: {os.path.split(file['file_path'])[1]} | Same hash file exists")
-                                return True
 
         # check file name extention
         if self.only_ext:
@@ -960,10 +968,72 @@ class downloader:
                     return True
         return False
 
+    def extract_archive(self, archive_path, hash_value):
+        """解压缩文件并保存hash信息"""
+        try:
+            base_dir = os.path.dirname(archive_path)
+            file_name = os.path.splitext(os.path.basename(archive_path))[0]
+            extract_dir = os.path.join(base_dir, file_name)
+            file_ext = os.path.splitext(archive_path)[1].lower()
+            
+            # 检查是否已经解压过
+            hash_file = os.path.join(base_dir, self.hash_filename)
+            if os.path.exists(hash_file):
+                with open(hash_file, 'r') as f:
+                    hash_data = json.load(f)
+                    if hash_value in hash_data:
+                        logger.info(f"文件 {os.path.basename(archive_path)} 已经解压过")
+                        return True
+            else:
+                hash_data = {}
 
+            # 创建解压目标目录
+            if not os.path.exists(extract_dir):
+                os.makedirs(extract_dir)
+
+            # 根据不同的压缩格式进行解压
+            if file_ext == '.zip':
+                with zipfile.ZipFile(archive_path, 'r') as zip_ref:
+                    zip_ref.extractall(extract_dir)
+            elif file_ext == '.7z':
+                with py7zr.SevenZipFile(archive_path, 'r') as sz_ref:
+                    sz_ref.extractall(extract_dir)
+            elif file_ext in ['.rar']:
+                with rarfile.RarFile(archive_path, 'r') as rar_ref:
+                    rar_ref.extractall(extract_dir)
+            else:
+                logger.warning(f"不支持的压缩格式: {file_ext}")
+                return False
+
+            # 保存hash信息
+            hash_data[hash_value] = file_name
+            with open(hash_file, 'w') as f:
+                json.dump(hash_data, f, indent=2)
+
+            # 删除原压缩文件
+            os.remove(archive_path)
+            logger.info(f"成功解压到 {file_name} 并删除: {os.path.basename(archive_path)}")
+            return True
+
+        except Exception as e:
+            logger.error(f"解压失败 {os.path.basename(archive_path)}: {str(e)}")
+            return False
+
+    def process_existing_archives(self, directory):
+        """处理目录中已存在的压缩文件"""
+        for root, _, files in os.walk(directory):
+            for file in files:
+                if file.lower().endswith(('.zip', '.7z', '.rar')):
+                    archive_path = os.path.join(root, file)
+                    hash_value = get_file_hash(archive_path)
+                    self.extract_archive(archive_path, hash_value)
 
     def start_download(self):
-        # start the download process
+        # 处理已存在的压缩文件
+        if self.auto_extract:
+            logger.info("处理已存在的压缩文件...")
+            self.process_existing_archives(os.getcwd())
+            
         self.load_archive()
 
         urls = []
