@@ -990,25 +990,40 @@ class downloader:
             try:
                 if file_ext == '.zip':
                     with zipfile.ZipFile(archive_path, 'r') as zip_ref:
-                        # 处理文件名中的空格问题
-                        for zip_info in zip_ref.filelist:
-                            # 修正文件名，移除结尾空格
-                            filename = zip_info.filename
-                            if filename.endswith(' /') or filename.endswith(' \\'):
-                                filename = filename.rstrip(' /\\') + '/'
-                            elif filename.endswith(' '):
-                                filename = filename.rstrip()
+                        try:
+                            # 先尝试直接解压
+                            zip_ref.extractall(extract_dir)
+                        except OSError:
+                            # 如果直接解压失败，则逐个处理文件
+                            logger.info(f"直接解压失败，尝试逐个处理文件: {os.path.basename(archive_path)}")
+                            extract_success = False
+                            for zip_info in zip_ref.filelist:
+                                # 修正文件名，移除结尾空格
+                                filename = zip_info.filename
+                                if filename.endswith(' /') or filename.endswith(' \\'):
+                                    filename = filename.rstrip(' /\\') + '/'
+                                elif filename.endswith(' '):
+                                    filename = filename.rstrip()
+                                
+                                # 创建所需的目录
+                                target_path = os.path.join(extract_dir, filename)
+                                dirname = os.path.dirname(target_path)
+                                if not os.path.exists(dirname):
+                                    os.makedirs(dirname)
+                                
+                                # 如果不是目录，则解压文件
+                                if not filename.endswith('/'):
+                                    try:
+                                        with zip_ref.open(zip_info) as source, open(target_path, 'wb') as target:
+                                            shutil.copyfileobj(source, target)
+                                            extract_success = True
+                                    except OSError:
+                                        # 如果某个文件解压失败，继续处理其他文件
+                                        continue
                             
-                            # 创建所需的目录
-                            target_path = os.path.join(extract_dir, filename)
-                            dirname = os.path.dirname(target_path)
-                            if not os.path.exists(dirname):
-                                os.makedirs(dirname)
-                            
-                            # 如果不是目录，则解压文件
-                            if not filename.endswith('/'):
-                                with zip_ref.open(zip_info) as source, open(target_path, 'wb') as target:
-                                    shutil.copyfileobj(source, target)
+                            # 如果所有文件都解压失败，抛出异常触发重试
+                            if not extract_success:
+                                raise Exception("所有文件解压都失败")
                 elif file_ext == '.7z':
                     with py7zr.SevenZipFile(archive_path, 'r') as sz_ref:
                         sz_ref.extractall(extract_dir)
