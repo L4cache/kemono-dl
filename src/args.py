@@ -281,6 +281,10 @@ def get_args():
                     action=argparse.BooleanOptionalAction, default=False,
                     help="Try look for passwords of archived files (zip, 7z, rar), the password will be stored in \".pw\" file in the same place of the archive if found.")
 
+    ap.add_argument("--clear-failed-marks",
+                    action='store_true',
+                    help='清除所有永久跳过标记，重新尝试下载和解压')
+
     args = vars(ap.parse_args())
     args['cookie_domains'] = {'kemono': None, 'coomer': None}
 
