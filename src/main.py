@@ -119,6 +119,7 @@ class downloader:
         self.archives_password = args['archives_password']
         self.auto_extract = True  # 新增自动解压选项
         self.hash_filename = '.extracted_hash'  # 用于存储解压后文件的hash
+        self.clear_failed = args['clear_failed_marks']
 
         self.session = RefererSession(
             proxy_agent = self.proxy_agent,
@@ -979,7 +980,7 @@ class downloader:
             # 检查是否有解压失败标记（仅对新下载的文件检查）
             fail_mark = os.path.join(base_dir, f"{file_name}.extract_failed")
             if is_new_download and os.path.exists(fail_mark):
-                logger.info(f"跳过: {os.path.basename(archive_path)} | 之前多次解压失败已标记")
+                logger.info(f"跳过: {os.path.basename(archive_path)} | 之前多次下载解压均失败已标记")
                 return False  # 不删除压缩文件，保留它
             
             # 创建解压目标目录
@@ -1021,7 +1022,7 @@ class downloader:
                                         # 如果某个文件解压失败，继续处理其他文件
                                         continue
                             
-                            # 如果所有文件都解压失败，抛出异常触发重试
+                            # 如果所有文件都解压失败，抛出异常
                             if not extract_success:
                                 raise Exception("所有文件解压都失败")
                 elif file_ext == '.7z':
@@ -1081,14 +1082,15 @@ class downloader:
                 retry_count += 1
                 if retry_count >= 3:  # 超过3次失败
                     with open(fail_mark, 'w') as f:
-                        f.write(f"Extract failed 3 times, last attempt at {datetime.datetime.now()}: {str(e)}")
+                        f.write(f"Download and extract failed 3 times, last attempt at {datetime.datetime.now()}: {str(e)}")
                     if os.path.exists(retry_file):
                         os.remove(retry_file)
-                    logger.error(f"文件 {os.path.basename(archive_path)} 已尝试3次解压均失败，已标记为永久跳过")
+                    logger.error(f"文件 {os.path.basename(archive_path)} 已尝试3次下载解压均失败，已标记为永久跳过")
                 else:
                     with open(retry_file, 'w') as f:
                         f.write(str(retry_count))
-                    logger.warning(f"文件 {os.path.basename(archive_path)} 解压失败第{retry_count}次，将重试下载")
+                    logger.warning(f"文件 {os.path.basename(archive_path)} 下载解压失败第{retry_count}次，将重试下载")
+                    # 删除压缩文件（除非是密码保护的），触发重新下载
                     if "encrypted" not in str(e).lower() and "password" not in str(e).lower():
                         if os.path.exists(archive_path):
                             os.remove(archive_path)
@@ -1112,6 +1114,11 @@ class downloader:
                     self.extract_archive(archive_path, hash_value, is_new_download=False)
 
     def start_download(self):
+        # 如果指定了清除标记，先清除
+        if self.clear_failed:
+            logger.info("清除永久跳过标记...")
+            self.clear_failed_marks(os.getcwd())
+        
         # 处理已存在的压缩文件
         if self.auto_extract:
             logger.info("处理已存在的压缩文件...")
@@ -1195,6 +1202,20 @@ class downloader:
     def format_time_by_type(self, time):
         t = self.get_date_by_type(time)
         return t.strftime(self.date_strf_pattern) if t != None else t
+
+    def clear_failed_marks(self, directory):
+        """清除所有永久跳过标记"""
+        count = 0
+        for root, _, files in os.walk(directory):
+            for file in files:
+                if file.endswith('.extract_failed'):
+                    try:
+                        os.remove(os.path.join(root, file))
+                        count += 1
+                    except:
+                        pass
+        if count > 0:
+            logger.info(f"已清除 {count} 个永久跳过标记")
 
 def main():
     downloader(get_args())
