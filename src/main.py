@@ -1061,6 +1061,19 @@ class downloader:
             # 删除原压缩文件
             os.remove(archive_path)
             logger.info(f"成功解压到 {file_name} 并删除: {os.path.basename(archive_path)}")
+
+            # 删除指定类型的文件
+            if self.args['delete_extracted_types']:
+                for root, _, files in os.walk(file_name):
+                    for file in files:
+                        ext = os.path.splitext(file)[1].lower().lstrip('.')
+                        if ext in self.args['delete_extracted_types']:
+                            try:
+                                os.remove(os.path.join(root, file))
+                                logger.info(f"删除指定类型文件: {file}")
+                            except Exception as e:
+                                logger.warning(f"删除文件 {file} 失败: {str(e)}")
+
             return True
 
         except Exception as e:
