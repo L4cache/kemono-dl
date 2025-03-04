@@ -281,6 +281,10 @@ def get_args():
                     action=argparse.BooleanOptionalAction, default=False,
                     help="Try look for passwords of archived files (zip, 7z, rar), the password will be stored in \".pw\" file in the same place of the archive if found.")
 
+    ap.add_argument("--delete-extracted-types",
+                    metavar="EXT", type=str, default=[],
+                    help="删除解压后的指定类型文件，多个类型用逗号分隔 (例如: txt,url)")
+
     ap.add_argument("--clear-failed-marks",
                     action='store_true',
                     help='清除所有永久跳过标记，重新尝试下载和解压')
@@ -363,6 +367,9 @@ def get_args():
         args['only_postname'] = [s.strip().lower() for s in args["only_postname"].split(",")]
     if args['skip_postname']:
         args['skip_postname'] = [s.strip().lower() for s in args["skip_postname"].split(",")]
+
+    if args['delete_extracted_types']:
+        args['delete_extracted_types'] = [s.strip().lower() for s in args["delete_extracted_types"].split(",")]
 
     def check_date(args, key):
         try:
