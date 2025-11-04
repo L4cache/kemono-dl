@@ -177,7 +177,7 @@ class downloader:
             # the creators list changes frequently, so I think doing the length check will result in frequent "expiration" and is oppose to my purpose of caching.
             # plus, the length in the header is gzip-ed length, it will be another headache to deal with.
             # creators_len = self.session.head(url=creators_api, cookies=self.cookies, headers=self.headers, timeout=self.timeout).headers.get('Content-Length','')
-            if previous_cache_ts - cache_ts > self.cache_creators_expire:
+            if not previous_cache or cache_ts - previous_cache_ts > self.cache_creators_expire:
                 with open(cache_dir / (cache_prefix + str(cache_ts)), 'w', encoding='utf-8') as cache_writing:
                     resp = self.session.get(url=creators_api, cookies=self.cookies, headers=self.headers, timeout=self.timeout)
                     resp_content_decode = resp.content.decode('utf-8')
