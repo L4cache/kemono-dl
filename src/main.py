@@ -165,7 +165,7 @@ class downloader:
         if self.cache_creators:
             cache_dir = pathlib.Path(tempfile.gettempdir())
             cache_ts = int(time.time())
-            cache_prefix = f"kemono-dl_{domain}_creators_"
+            cache_prefix = f"kemono-dl_{domain}_creators_".replace('.','-')
             previous_caches = list(cache_dir.glob(cache_prefix + '*'))
             previous_cache = None
             previous_cache_ts = 0
