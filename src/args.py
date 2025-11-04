@@ -133,19 +133,19 @@ def get_args():
                     metavar="YYYYMMDD", type=str, default=None,
                     help="Only download posts published from this date.")
 
-    ap.add_argument("--datebefore",
+    ap.add_argument("--datebefore", "-db",
                     metavar="YYYYMMDD", type=str, default=None,
                     help="Only download posts published before this date.")
 
-    ap.add_argument("--dateafter",
+    ap.add_argument("--dateafter", "-da",
                     metavar="YYYYMMDD", type=str, default=None,
                     help="Only download posts published after this date.")
 
-    ap.add_argument("--user-updated-datebefore",
+    ap.add_argument("--user-updated-datebefore", "-udb",
                     metavar="YYYYMMDD", type=str, default=None,
                     help="Only download user posts if the user was updated before this date.")
 
-    ap.add_argument("--user-updated-dateafter",
+    ap.add_argument("--user-updated-dateafter", "-uda",
                     metavar="YYYYMMDD", type=str, default=None,
                     help="Only download user posts if the user was updated after this date.")
 
@@ -267,7 +267,8 @@ def get_args():
 
     ap.add_argument("--head-check",
                     action=argparse.BooleanOptionalAction, default=False,
-                    help="Check some first bytes of downloaded content with a separate request to fail quick if weird thing happend. (default: False)")
+                    # help="Check some first bytes of downloaded content with a separate request to fail quick if weird thing happend. (default: False)")
+                    help=argparse.SUPPRESS)
 
     ap.add_argument("--proxy-agent",
                     metavar="https://agent/proxy", type=str, default=None,
@@ -276,7 +277,8 @@ def get_args():
 
     ap.add_argument("--force-dss",
                     metavar='LETTER', type=str, default=None,
-                    help='Force Data Server Series.')
+                    # help='Force Data Server Series.')
+                    help=argparse.SUPPRESS)
 
     ap.add_argument("--archives-password",
                     action=argparse.BooleanOptionalAction, default=False,
