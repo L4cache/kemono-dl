@@ -236,7 +236,7 @@ def get_args():
     ap.add_argument("--dupe-check",
                     action=argparse.BooleanOptionalAction, default=True,
                     help='Simple similar filename file search and hash compare to prevent duplicate downloads (default: True)')
-    
+
     ap.add_argument("--dupe-check-pattern",
                     metavar="DUPE_CHECK_PATTERN", type=str, default="{index}_*,*{id}*/{index}_*",
                     help="Specify similar filename search patterns for dupe check, 2 patterns separated by comma, please include wildcard. (default: {index}_*,*{id}*/{index}_*)")
@@ -252,7 +252,7 @@ def get_args():
     ap.add_argument("--fp-added",
                     action=argparse.BooleanOptionalAction, default=False,
                     help='Filter posts by added date instead of published date. Override behavior of --date --dateafter --datebefore. (default: False)')
-    
+
     ap.add_argument("--fancards",
                     action=argparse.BooleanOptionalAction, default=False,
                     help='Download Fancards. (default: False)')
@@ -268,19 +268,27 @@ def get_args():
     ap.add_argument("--head-check",
                     action=argparse.BooleanOptionalAction, default=False,
                     help="Check some first bytes of downloaded content with a separate request to fail quick if weird thing happend. (default: False)")
-    
+
     ap.add_argument("--proxy-agent",
                     metavar="https://agent/proxy", type=str, default=None,
                     help="Proxy agent URL. This is NOT standrad http/s proxy. Pass 'u' parameter to agent for proxying. Not enabled by default. "
                             "Enable this you can not download kemono and commer at once.")
-    
+
     ap.add_argument("--force-dss",
                     metavar='LETTER', type=str, default=None,
                     help='Force Data Server Series.')
-    
+
     ap.add_argument("--archives-password",
                     action=argparse.BooleanOptionalAction, default=False,
                     help="Try look for passwords of archived files (zip, 7z, rar), the password will be stored in \".pw\" file in the same place of the archive if found. (default: False)")
+
+    ap.add_argument("--cache-creators",
+                    action=argparse.BooleanOptionalAction, default=False,
+                    help="Cache the creators list. (default: False)")
+
+    ap.add_argument("--cache-creators-expire",
+                    metavar="SEC", default=86400,
+                    help="Creators cache expire time in seconds. (default: 86400)")
 
     if len(sys.argv) < 2:
         ap.print_usage()

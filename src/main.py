@@ -13,6 +13,7 @@ import json
 from numbers import Number
 import pathlib
 import itertools
+import tempfile
 
 from .args import get_args
 from .logger import logger
@@ -134,6 +135,8 @@ class downloader:
         self.proxy_agent = args['proxy_agent']
         self.force_dss = args['force_dss']
         self.archives_password = args['archives_password']
+        self.cache_creators = args['cache_creators']
+        self.cache_creators_expire = args['cache_creators_expire']
 
         self.session = RefererSession(
             proxy_agent = self.proxy_agent,
@@ -159,9 +162,33 @@ class downloader:
         logger.debug(f"Getting creator json from {creators_api}")
         if self.force_unlisted:
             return []
-        resp = self.session.get(url=creators_api, cookies=self.cookies, headers=self.headers, timeout=self.timeout)
-        # json.loads accepts bytes, I'm not sure if leave it like auto-detect is a good idea or not
-        resp_content_decode = resp.content.decode('utf-8')
+        if self.cache_creators:
+            cache_dir = pathlib.Path(tempfile.gettempdir())
+            cache_ts = int(time.time())
+            cache_prefix = f"kemono-dl_{domain}_creators_"
+            previous_caches = list(cache_dir.glob(cache_prefix + '*'))
+            previous_cache = None
+            previous_cache_ts = 0
+            for i in previous_caches:
+                i_ts = int(i.name[len(cache_prefix):])
+                if i_ts > previous_cache_ts:
+                    previous_cache_ts = i_ts
+                    previous_cache = i
+            # the creators list changes frequently, so I think doing the length check will result in frequent "expiration" and is oppose to my purpose of caching.
+            # plus, the length in the header is gzip-ed length, it will be another headache to deal with.
+            # creators_len = self.session.head(url=creators_api, cookies=self.cookies, headers=self.headers, timeout=self.timeout).headers.get('Content-Length','')
+            if previous_cache_ts - cache_ts > self.cache_creators_expire:
+                with open(cache_dir / (cache_prefix + str(cache_ts)), 'w', encoding='utf-8') as cache_writing:
+                    resp = self.session.get(url=creators_api, cookies=self.cookies, headers=self.headers, timeout=self.timeout)
+                    resp_content_decode = resp.content.decode('utf-8')
+                    cache_writing.write(resp_content_decode)
+            else:
+                with open(previous_cache, 'r', encoding='utf-8') as cache_reading:
+                    resp_content_decode = cache_reading.read()
+        else:
+            resp = self.session.get(url=creators_api, cookies=self.cookies, headers=self.headers, timeout=self.timeout)
+            # json.loads accepts bytes as well, I'm not sure if leave it like auto-detect (text encoding) is a good idea or not
+            resp_content_decode = resp.content.decode('utf-8')
         return json.loads(resp_content_decode)
 
     def get_user(self, user_id:str, service:str):
