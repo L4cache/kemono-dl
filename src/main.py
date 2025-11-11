@@ -710,22 +710,24 @@ class downloader:
             print(file_content, file=f)
 
     def download_file(self, file:dict, retry:int, post:dict):
-        # archives password
-        if self.archives_password and file['file_variables']['ext'] in ('zip','7z','rar'):
-            try:
-                passwd_api = "https://{site}/api{api_ver}/file/{hash}".format(**post['post_variables'],**file['file_variables'],api_ver=self.api_ver)
-                passwd_resp = self.session.get(url=passwd_api, allow_redirects=True, headers=self.headers, cookies=self.cookies, timeout=self.timeout)
-                passwd_json = passwd_resp.json()
-            except:
-                passwd_json = None
-            if passwd_json:
-                if passwd_json.get('password'):
-                    passwd_filevar = dict(file['file_variables'])
-                    passwd_filevar.update({'ext':'pw'})
-                    passwd_filepath = compile_file_path(post['post_path'], post['post_variables'], passwd_filevar, self.filename_template, self.restrict_ascii)
-                    self.write_to_file(passwd_filepath, passwd_json.get('password'))
-
         # download a file
+
+        # try archives password before skipping
+        if self.archives_password and file['file_variables']['ext'] in ('zip','7z','rar'):
+            passwd_filevar = dict(file['file_variables'])
+            passwd_filevar.update({'ext':'pw'})
+            passwd_filepath = compile_file_path(post['post_path'], post['post_variables'], passwd_filevar, self.filename_template, self.restrict_ascii)
+            if not os.path.exists(passwd_filepath):
+                try:
+                    passwd_api = "https://{site}/api{api_ver}/file/{hash}".format(**post['post_variables'],**file['file_variables'],api_ver=self.api_ver)
+                    passwd_resp = self.session.get(url=passwd_api, allow_redirects=True, headers=self.headers, cookies=self.cookies, timeout=self.timeout)
+                    passwd_json = passwd_resp.json()
+                except:
+                    passwd_json = None
+                if passwd_json:
+                    if passwd_json.get('password'):
+                        self.write_to_file(passwd_filepath, passwd_json.get('password'))
+
         if self.skip_file(file,post=post):
             return
 
