@@ -710,18 +710,6 @@ class downloader:
             print(file_content, file=f)
 
     def download_file(self, file:dict, retry:int, post:dict):
-        # download a file
-        if self.skip_file(file,post=post):
-            return
-
-        part_file = f"{file['file_path']}.part" if not self.no_part else file['file_path']
-
-        logger.info(f"Downloading: {os.path.split(file['file_path'])[1]}")
-        logger.debug(f"Downloading from: {file['file_variables']['url']}")
-        logger.debug(f"Downloading to: {part_file}")
-
-        request_headers={'Referer':file['file_variables']['referer']}
-
         # archives password
         if self.archives_password and file['file_variables']['ext'] in ('zip','7z','rar'):
             try:
@@ -736,6 +724,18 @@ class downloader:
                     passwd_filevar.update({'ext':'pw'})
                     passwd_filepath = compile_file_path(post['post_path'], post['post_variables'], passwd_filevar, self.filename_template, self.restrict_ascii)
                     self.write_to_file(passwd_filepath, passwd_json.get('password'))
+
+        # download a file
+        if self.skip_file(file,post=post):
+            return
+
+        part_file = f"{file['file_path']}.part" if not self.no_part else file['file_path']
+
+        logger.info(f"Downloading: {os.path.split(file['file_path'])[1]}")
+        logger.debug(f"Downloading from: {file['file_variables']['url']}")
+        logger.debug(f"Downloading to: {part_file}")
+
+        request_headers={'Referer':file['file_variables']['referer']}
 
         if self.force_dss:
             dss_letter=isinstance(self.force_dss,str) and self.force_dss[0]
