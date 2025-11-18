@@ -136,7 +136,7 @@ class downloader:
         self.force_dss = args['force_dss']
         self.archives_password = args['archives_password']
         self.cache_creators = args['cache_creators']
-        self.cache_creators_expire = args['cache_creators_expire']
+        self.cache_creators_expire = int(args['cache_creators_expire'])
 
         self.session = RefererSession(
             proxy_agent = self.proxy_agent,
