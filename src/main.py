@@ -309,8 +309,9 @@ class downloader:
                         return
                     continue
                 self.comments=comments_original
-                if not is_post and (self.content or self.inline or self.comments or self.extract_links or self.extract_all_links
-                                    or '{added}' in self.name_templates_glop or '{updated}' in self.name_templates_glop):
+                if ((not is_post) and (not 'pawchive' in site)
+                    and (self.content or self.inline or self.comments or self.extract_links or self.extract_all_links
+                        or '{added}' in self.name_templates_glop or '{updated}' in self.name_templates_glop)):
                     logger.debug(f"Requesting full post json from {api}/post/{post['id']}")
                     post_jr = post
                     try:
