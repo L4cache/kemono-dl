@@ -12,7 +12,7 @@ running_args = get_args()
 
 def parse_url(url):
     # parse urls
-    downloadable = re.search(r'^https://((?:kemono|coomer)\.(?:party|su|cr|st))/([^/]+)/user/([^/]+)($|/post/([^/]+))($|/revision/([^/]+)$)',url)
+    downloadable = re.search(r'^https://((?:kemono|coomer|pawchive)\.(?:party|su|cr|st))/([^/]+)/user/([^/]+)($|/post/([^/]+))($|/revision/([^/]+)$)',url)
     if not downloadable:
         return None
     return downloadable.group(1)
