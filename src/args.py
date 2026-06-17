@@ -257,9 +257,9 @@ def get_args():
                     action=argparse.BooleanOptionalAction, default=False,
                     help='Download Fancards. (default: False)')
 
-    ap.add_argument("--replace-tld", "--cccp",
+    ap.add_argument("--replace-domain", "--replace-tld", "--cccp",
                     action=argparse.BooleanOptionalAction, default=False,
-                    help='Change all input links (--links and --from-file) to .cr domain. Old argument name is kept for compatibility. (default: False)')
+                    help='Change all input links (--links and --from-file) to .cr domain. Old argument names are kept for compatibility. (default: False)')
 
     ap.add_argument("--announcements",
                     action=argparse.BooleanOptionalAction, default=False,

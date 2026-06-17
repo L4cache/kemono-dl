@@ -25,12 +25,12 @@ class downloader:
 
     def __init__(self, args):
         self.input_urls = args['links'] + args['from_file']
-        if args['replace_tld']:
+        if args['replace_domain']:
             for n,i in enumerate(self.input_urls):
-                i = re.sub("kemono.(party|su)","kemono.cr",i)
+                i = re.sub("kemono.(party|su|cr)","pawchive.st",i)
                 i = re.sub("coomer.(party|su)","coomer.st",i)
                 self.input_urls[n] = i
-        self.re_tld = re.compile(".(party|su|cr|st)")
+        self.re_domain = re.compile("(kemono|coomer|pawchive).(party|su|cr|st)")
         # list of completed posts from current session
         self.comp_posts = []
         # list of creators info
@@ -918,7 +918,7 @@ class downloader:
         if self.archive_file and os.path.exists(self.archive_file):
             with open(self.archive_file,'r') as f:
                 self.archive_list = f.read().splitlines()
-            self.archive_list = [self.re_tld.sub("",i) for i in self.archive_list]
+            self.archive_list = [self.re_domain.sub("",i) for i in self.archive_list]
             self.archive_list = set(self.archive_list) # "in" check has lower time complexity for sets
 
     def write_archive(self, post:dict):
@@ -938,7 +938,7 @@ class downloader:
         # check if the post should be downloaded
         if self.archive_file:
             post_url = "https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables'])
-            if self.re_tld.sub("",post_url) in self.archive_list:
+            if self.re_domain.sub("",post_url) in self.archive_list:
                 logger.info(f"Skipping post {post['post_variables']['id']} | post already archived") # add some numbers to indicate that the script isn't frozen when a lot of posts skipped and your screen is full of this message
                 return True
 
