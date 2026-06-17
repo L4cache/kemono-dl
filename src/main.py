@@ -484,11 +484,11 @@ class downloader:
             filename, file_extension = os.path.splitext(inline_image['src'].rsplit('/')[-1])
             m = re.search(r'[a-zA-Z0-9]{64}', inline_image['src'])
             file_hash = m.group(0) if m else None
-            _fox = 'fox.' if 'pawchive' in post['post_variables']['site'] else ''
+            _fileserver = 'file.' if 'pawchive' in post['post_variables']['site'] else ''
             file['file_variables'] = {
                 'filename': filename,
                 'ext': file_extension[1:],
-                'url': f"https://{_fox}{post['post_variables']['site']}/data{inline_image['src']}",
+                'url': f"https://{_fileserver}{post['post_variables']['site']}/data{inline_image['src']}",
                 'hash': file_hash,
                 'index': f"{index + 1}".zfill(len(str(len(inline_images)))),
                 'referer': f"https://{post['post_variables']['site']}/{post['post_variables']['service']}/user/{post['post_variables']['user_id']}/post/{post['post_variables']['id']}"
@@ -588,11 +588,11 @@ class downloader:
                     continue
                 m = re.search(r'[a-zA-Z0-9]{64}', attachment['path'])
                 file_hash = m.group(0) if m else None
-                _fox = 'fox.' if 'pawchive' in domain else ''
+                _fileserver = 'file.' if 'pawchive' in domain else ''
                 file['file_variables'] = {
                     'filename': filename,
                     'ext': file_extension[1:],
-                    'url': f"https://{_fox}{domain}/data{attachment['path']}",
+                    'url': f"https://{_fileserver}{domain}/data{attachment['path']}",
                     'hash': file_hash,
                     'index': f"{index + 1}".zfill(len(str(len(post['attachments'])))),
                     'referer': f"https://{domain}/{post['service']}/user/{post['user']}/post/{post['id']}"
