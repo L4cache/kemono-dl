@@ -36,6 +36,10 @@ class downloader:
         # list of creators info
         self.creators = []
 
+        # skip creator and post based on the import status
+        # hard coded for now, may turn this into arg
+        self.skip_no_import = True
+
         # requests variables
         self.headers = {'User-Agent': args['user_agent']} if args['user_agent'] else {}
         self.headers['Accept'] = 'text/css'
@@ -561,8 +565,9 @@ class downloader:
         new_post['post_variables']['published'] = self.format_time_by_type(post.get('published'))
         if not new_post['post_variables']['published'] and post_jr:
             new_post['post_variables']['published'] = self.format_time_by_type(post_jr.get('published'))
-        if post.get('tags'): new_post['post_variables']['tags'] = post.get('tags')
-        if post.get('poll'): new_post['post_variables']['poll'] = post.get('poll')
+        if _val := post.get('tags'): new_post['post_variables']['tags'] = _val
+        if _val := post.get('poll'): new_post['post_variables']['poll'] = _val
+        if _val := post.get('has_full'): new_post['post_variables']['has_full'] = _val
 
         new_post['post_path'] = compile_post_path(new_post['post_variables'], self.download_path_template, self.restrict_ascii)
 
@@ -927,6 +932,9 @@ class downloader:
                 f.write("https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables']) + '\n')
 
     def skip_user(self, user:dict):
+        if self.skip_no_import and user.get('ever_imported') == False:
+            logger.info(f"Skipping user {user['id']} | never imported")
+            return True
         # check last update date
         if self.user_up_datebefore or self.user_up_dateafter:
             if check_date(self.get_date_by_type(user['updated']), None, self.user_up_datebefore, self.user_up_dateafter):
@@ -936,6 +944,10 @@ class downloader:
 
     def skip_post(self, post:dict):
         # check if the post should be downloaded
+        if self.skip_no_import and post['post_variables'].get('has_full') == False:
+            logger.info(f"Skipping post {post['post_variables']['id']} | not imported")
+            return True
+
         if self.archive_file:
             post_url = "https://{site}/{service}/user/{user_id}/post/{id}".format(**post['post_variables'])
             if self.re_domain.sub("",post_url) in self.archive_list:
