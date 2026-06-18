@@ -317,7 +317,7 @@ def get_args():
         # make sure cookies are wildcard for better compatibility
         for cookie in loaded_cookies:
             args['cookie_domains']['kemono'] = args['cookie_domains']['kemono'] or (
-                match := re.search(r'^(?:www)?\.?(kemono\.(?:party|su|cr|st))$', cookie.domain)) and match.group(1)
+                match := re.search(r'^(?:www)?\.?((kemono|pawchive)\.(?:party|su|cr|st))$', cookie.domain)) and match.group(1)
             args['cookie_domains']['coomer'] = args['cookie_domains']['coomer'] or (
                 match := re.search(r'^(?:www)?\.?(coomer\.(?:party|su|cr|st))$', cookie.domain)) and match.group(1)
             
