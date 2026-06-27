@@ -285,8 +285,8 @@ def get_args():
                     help="Try look for passwords of archived files (zip, 7z, rar), the password will be stored in \".pw\" file in the same place of the archive if found. (default: False)")
 
     ap.add_argument("--cache-creators",
-                    action=argparse.BooleanOptionalAction, default=False,
-                    help="Cache the creators list. (default: False)")
+                    action=argparse.BooleanOptionalAction, default=True,
+                    help="Cache the creators list. (default: True)")
 
     ap.add_argument("--cache-creators-expire",
                     metavar="SEC", default=86400,
