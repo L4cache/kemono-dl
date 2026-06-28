@@ -587,6 +587,8 @@ class downloader:
                     except:
                         logger.error(f"Unrecognized attachment format")
                         continue
+                if attachment.get('deferred'):
+                    continue
                 if attachment.get('name') and isinstance(attachment.get('name'),str):
                     filename, file_extension = os.path.splitext(attachment['name'])
                 elif attachment.get('path') and isinstance(attachment.get('path'),str):
