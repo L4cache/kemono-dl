@@ -569,7 +569,7 @@ class downloader:
             new_post['post_variables']['published'] = self.format_time_by_type(post_jr.get('published'))
         if _val := post.get('tags'): new_post['post_variables']['tags'] = _val
         if _val := post.get('poll'): new_post['post_variables']['poll'] = _val
-        if _val := post.get('has_full'): new_post['post_variables']['has_full'] = _val
+        if (_val := post.get('has_full')) == False: new_post['post_variables']['has_full'] = _val
 
         new_post['post_path'] = compile_post_path(new_post['post_variables'], self.download_path_template, self.restrict_ascii)
 
