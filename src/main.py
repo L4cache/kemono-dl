@@ -27,10 +27,10 @@ class downloader:
         self.input_urls = args['links'] + args['from_file']
         if args['replace_domain']:
             for n,i in enumerate(self.input_urls):
-                i = re.sub("kemono.(party|su|cr)","pawchive.st",i)
+                i = re.sub("kemono.(party|su|cr)","pawchive.pw",i)
                 i = re.sub("coomer.(party|su)","coomer.st",i)
                 self.input_urls[n] = i
-        self.re_domain = re.compile("(kemono|coomer|pawchive).(party|su|cr|st)")
+        self.re_domain = re.compile("(kemono|coomer|pawchive).(party|su|cr|st|pw)")
         # list of completed posts from current session
         self.comp_posts = []
         # list of creators info
@@ -226,7 +226,7 @@ class downloader:
                 self.get_post(f"https://{domain}/{favorite['service']}/user/{favorite['id']}", retry=self.retry)
 
     def get_post(self, url:str, retry:int, chunk=0, first=True):
-        found = re.search(r'(https://((?:kemono|coomer|pawchive)\.(?:party|su|cr|st))/)(([^/]+)/user/([^/]+)($|/post/[^/]+)($|/revision/[^/]+))', url)
+        found = re.search(r'(https://((?:kemono|coomer|pawchive)\.(?:party|su|cr|st|pw))/)(([^/]+)/user/([^/]+)($|/post/[^/]+)($|/revision/[^/]+))', url)
         if not found:
             logger.error(f"Unable to find url parameters for {url}")
             return
