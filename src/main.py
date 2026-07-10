@@ -601,7 +601,7 @@ class downloader:
                 file['file_variables'] = {
                     'filename': filename,
                     'ext': file_extension[1:],
-                    'url': f"https://{_fileserver}{domain}/data{attachment['path']}",
+                    'url': f"https://{_fileserver}{domain}/data{attachment['path']}?f={filename}{file_extension}",
                     'hash': file_hash,
                     'index': f"{index + 1}".zfill(len(str(len(post['attachments'])))),
                     'referer': f"https://{domain}/{post['service']}/user/{post['user']}/post/{post['id']}"
