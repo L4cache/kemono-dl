@@ -369,7 +369,8 @@ class downloader:
                 if not self.simulate:
                     if not os.path.exists(os.path.split(file_path)[0]):
                         os.makedirs(os.path.split(file_path)[0])
-                    image.save(file_path, format=image.format)
+                    with open(file_path, "wb") as f:
+                        f.write(response.content)
             except:
                 logger.error(f"Unable to download profile {img_type} for {post['post_variables']['username']}")
 
