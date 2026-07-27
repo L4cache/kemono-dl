@@ -36,8 +36,6 @@ class downloader:
         # list of creators info
         self.creators = []
 
-        # skip creator and post based on the import status
-        # hard coded for now, may turn this into arg
         self.skip_no_import = args['skip_no_import']
 
         # requests variables
