@@ -292,6 +292,10 @@ def get_args():
                     metavar="SEC", default=86400,
                     help="Creators cache expire time in seconds. (default: 86400)")
 
+    ap.add_argument("--skip-no-import",
+                    action=argparse.BooleanOptionalAction, default=True,
+                    help="Skip not imported creators and posts. (default: True)")
+
     if len(sys.argv) < 2:
         ap.print_usage()
         sys.exit(1)

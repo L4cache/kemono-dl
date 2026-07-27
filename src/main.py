@@ -38,7 +38,7 @@ class downloader:
 
         # skip creator and post based on the import status
         # hard coded for now, may turn this into arg
-        self.skip_no_import = True
+        self.skip_no_import = args['skip_no_import']
 
         # requests variables
         self.headers = {'User-Agent': args['user_agent']} if args['user_agent'] else {}
