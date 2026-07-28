@@ -947,7 +947,7 @@ class downloader:
 
     def skip_post(self, post:dict):
         # check if the post should be downloaded
-        if self.skip_no_import and post['post_variables'].get('has_full') == False:
+        if self.skip_no_import and post['post_variables'].get('has_full') == False and (post['attachments'] or post['inline_images']):
             logger.info(f"Skipping post {post['post_variables']['id']} | not imported")
             return True
 
