@@ -431,14 +431,17 @@ class downloader:
         for fancard in fancards_json:
             fancard_added = datetime.datetime.fromisoformat(fancard.get('added'))
             fancard_title = datetime.datetime.strftime(fancard_added,'Added %Y-%m')
-            fancard_url = fancard.get('server') + fancard.get('path')
-            fancard_filename = fancard.get('hash')
+            fancard_hash = fancard.get('hash')
+            if 'pawchive' in post['post_variables']['site']:
+                fancard_url = f'https://img.pawchive.pw/thumbnail/data/{fancard_hash[:2]}/{fancard_hash[2:4]}/{fancard_hash}{fancard.get('ext')}'
+            else:
+                fancard_url = fancard.get('server') + fancard.get('path')
             fancard_ext = fancard.get('ext').strip('.')
             file_variables = {
-                'filename':'{title}_{name}'.format(title=fancard_title,name=fancard_filename),
+                'filename':'{title}_{name}'.format(title=fancard_title,name=fancard_hash),
                 'ext':fancard_ext,
                 'url':fancard_url,
-                'hash':fancard_filename,
+                'hash':fancard_hash,
                 'referer':post_url
             }
             file_path = compile_file_path(os.path.join(post['post_path'],'Fancards'), post['post_variables'], file_variables, self.user_filename_template, self.restrict_ascii)
