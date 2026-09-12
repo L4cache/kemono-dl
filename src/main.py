@@ -224,7 +224,7 @@ class downloader:
                 self.get_post(f"https://{domain}/{favorite['service']}/user/{favorite['id']}", retry=self.retry)
 
     def get_post(self, url:str, retry:int, chunk=0, first=True):
-        found = re.search(r'(https://((?:kemono|coomer|pawchive)\.(?:party|su|cr|st|pw))/)(([^/]+)/user/([^/]+)($|/post/[^/]+)($|/revision/[^/]+))', url)
+        found = re.search(r'(https://((?:kemono|coomer|pawchive)\.(?:party|su|cr|st|pw))/)(([^/]+)/user/([^/]+)($|/post/([^/]+))($|/revision/([^/]+)))', url)
         if not found:
             logger.error(f"Unable to find url parameters for {url}")
             return
@@ -233,8 +233,12 @@ class downloader:
         service = found.group(4)
         user_id = found.group(5)
         is_post = found.group(6)
-        is_revision = found.group(7)
+        post_id = found.group(7)
+        is_revision = found.group(8)
+        revision_id = found.group(9)
         user = self.get_user(user_id, service)
+        if is_revision:
+            api=f"{found.group(1)}api{self.api_ver}/{service}/user/{user_id}/post/{post_id}/revisions"
         if not user:
             if self.force_unlisted:
                 user={'favorited': 0, 'id': user_id, 'indexed': 1666666666, 'name': user_id, 'service': service, 'updated': 1666666666}
@@ -259,6 +263,17 @@ class downloader:
                     logger.warning(f"Failed to request user json from: {api}?o={chunk} | 429 Too Many Requests | All retries failed")
                     return
             json = response.json()
+            if is_revision:
+                revision_found = False
+                for rev in json:
+                    if int(rev.get('revision_id')) == int(revision_id):
+                        revision_found = rev
+                        break
+                if revision_found:
+                    json  = revision_found
+                else:
+                    logger.error(f"Revision not found for {api}")
+                    return
             if not json:
                 if is_post:
                     logger.error(f"Unable to find post json for {api}")
