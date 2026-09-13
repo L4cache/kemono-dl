@@ -222,7 +222,7 @@ def get_args():
                     help="The time in millisecond to limit before next request (default: 300)")
 
     ap.add_argument("--user-agent",
-                    metavar="UA", type=str, default='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36',
+                    metavar="UA", type=str, default='L4cache/kemono-dl',
                     help="Set a custom user agent")
 
     ap.add_argument("--proxy",
