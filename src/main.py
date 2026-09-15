@@ -816,9 +816,21 @@ class downloader:
 
         # responce status code checking
         if response.status_code == 404:
-            logger.error(f"Failed to download: {file['file_variables']['url']} | 404 Not Found")
-            self.post_errors += 1
-            return
+            ret = False
+            if self.attachment_thumbnail == 1 and not file['file_variables'].get('is_thumb'):
+                logger.warning(f"Full download failed, trying thumbnail")
+                path_extract = re.search('/[0-9a-f]{2}/[0-9a-f]{2}/[0-9a-f]{64}[^?]*', file['file_variables']['url']).group(0)
+                file['file_variables']['filename'] = "PREVIEW_" + file['file_variables']['filename']
+                file['file_variables']['url'] = f"https://img.{post['post_variables']['site']}/thumbnail/data{path_extract}"
+                file['file_variables']['hash'] = None
+                file['file_variables']['is_thumb'] = True
+                file['file_path'] = compile_file_path(post['post_path'], post['post_variables'], file['file_variables'], self.filename_template, self.restrict_ascii)
+                ret = self.download_file(file, retry=retry-1, post=post)
+            if not ret:
+                logger.error(f"Failed to download: {file['file_variables']['url']} | 404 Not Found")
+                self.post_errors += 1
+                return
+            return ret
 
         if response.status_code == 403:
             for _ in range(self.retry_403):
@@ -944,6 +956,7 @@ class downloader:
                 os.replace(part_file, file['file_path'])
             else:
                 os.rename(part_file, file['file_path'])
+        return True
 
     def download_yt_dlp(self, post:dict):
         # download from video streaming site
