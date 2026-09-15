@@ -616,7 +616,7 @@ class downloader:
                 m = re.search(r'[a-zA-Z0-9]{64}', attachment['path'])
                 file_hash = m.group(0) if m else None
                 _fileserver = 'file.' if 'pawchive' in domain else ''
-                if attachment.get('preview_only') or not post.get('has_full') or self.attachment_thumbnail > 1:
+                if ((attachment.get('preview_only') or not post.get('has_full')) and self.attachment_thumbnail == 1) or self.attachment_thumbnail > 1:
                     file['file_variables'] = {
                         'filename': "PREVIEW_" + filename,
                         'ext': file_extension[1:],
