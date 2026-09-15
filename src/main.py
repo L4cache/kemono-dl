@@ -37,6 +37,7 @@ class downloader:
         self.creators = []
 
         self.skip_no_import = args['skip_no_import']
+        self.attachment_thumbnail = args['attachment_thumbnail']
 
         # requests variables
         self.headers = {'User-Agent': args['user_agent']} if args['user_agent'] else {}
@@ -615,14 +616,25 @@ class downloader:
                 m = re.search(r'[a-zA-Z0-9]{64}', attachment['path'])
                 file_hash = m.group(0) if m else None
                 _fileserver = 'file.' if 'pawchive' in domain else ''
-                file['file_variables'] = {
-                    'filename': filename,
-                    'ext': file_extension[1:],
-                    'url': f"https://{_fileserver}{domain}/data{attachment['path']}?f={filename}{file_extension}",
-                    'hash': file_hash,
-                    'index': f"{index + 1}".zfill(len(str(len(post['attachments'])))),
-                    'referer': f"https://{domain}/{post['service']}/user/{post['user']}/post/{post['id']}"
-                }
+                if attachment.get('preview_only') or not post.get('has_full') or self.attachment_thumbnail > 1:
+                    file['file_variables'] = {
+                        'filename': "PREVIEW_" + filename,
+                        'ext': file_extension[1:],
+                        'url': f"https://img.{domain}/thumbnail/data{attachment['path']}",
+                        'hash': None,
+                        'index': f"{index + 1}".zfill(len(str(len(post['attachments'])))),
+                        'referer': f"https://{domain}/{post['service']}/user/{post['user']}/post/{post['id']}",
+                        'is_thumb': True
+                    }
+                else:
+                    file['file_variables'] = {
+                        'filename': filename,
+                        'ext': file_extension[1:],
+                        'url': f"https://{_fileserver}{domain}/data{attachment['path']}?f={filename}{file_extension}",
+                        'hash': file_hash,
+                        'index': f"{index + 1}".zfill(len(str(len(post['attachments'])))),
+                        'referer': f"https://{domain}/{post['service']}/user/{post['user']}/post/{post['id']}"
+                    }
                 file['file_path'] = compile_file_path(new_post['post_path'], new_post['post_variables'], file['file_variables'], self.filename_template, self.restrict_ascii)
                 new_post['attachments'].append(file)
 
@@ -918,7 +930,7 @@ class downloader:
                     logger.error(f"File hash did not match server! | All retries failed")
                     self.post_errors += 1
                     return
-                else:
+                elif not file['file_variables'].get('is_thumb'):
                     logger.warning(f"No hash from server! | Saving file with suffix in name")
                     filepath=os.path.splitext(file['file_path'])
                     filepath=filepath[0]+'_noserverhash'+filepath[1]

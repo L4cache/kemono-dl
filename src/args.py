@@ -296,6 +296,10 @@ def get_args():
                     action=argparse.BooleanOptionalAction, default=True,
                     help="Skip not imported creators and posts. (default: True)")
 
+    ap.add_argument("--attachment-thumbnail",
+                    metavar="LEVEL", type=int, default=0,
+                    help="Download thumbnails, levels: 0: disabled, 1: when full attachment is not available, 2: always. Thumbnails will not be hash checked. (default: 0)")
+
     if len(sys.argv) < 2:
         ap.print_usage()
         sys.exit(1)
