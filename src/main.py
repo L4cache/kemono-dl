@@ -635,6 +635,7 @@ class downloader:
                         'index': f"{index + 1}".zfill(len(str(len(post['attachments'])))),
                         'referer': f"https://{domain}/{post['service']}/user/{post['user']}/post/{post['id']}"
                     }
+                    if attachment.get('preview_only'): file['file_variables']['preview_only'] = True
                 file['file_path'] = compile_file_path(new_post['post_path'], new_post['post_variables'], file['file_variables'], self.filename_template, self.restrict_ascii)
                 new_post['attachments'].append(file)
 
@@ -1033,6 +1034,9 @@ class downloader:
 
     def skip_file(self, file:dict, post:dict):
         # check if file exists
+        if file['file_variables'].get('preview_only') and self.skip_no_import:
+            logger.warning(f"Skipping: {os.path.split(file['file_path'])[1]} | preview only")
+            return True
         if not self.overwrite:
             if os.path.exists(file['file_path']):
                 confirm_msg = ''
